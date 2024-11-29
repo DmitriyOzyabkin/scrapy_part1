@@ -10,11 +10,15 @@ class LabirintruSpider(scrapy.Spider):
 
     def parse(self, response):
 
-        # next_page = response.xpath("//a[@class='pagination-next__text']/@href").get()
-        # if next_page:
-        #     next_page = "https://www.labirint.ru/genres/2791/" + next_page
-        #     yield response.follow(next_page, callback=self.parse)
+        # Получеие ссылок на книги с каждой странички в категории "Фантастика"
 
+        # Поиск и парсинг следующей странички, если есть
+        next_page = response.xpath("//a[@class='pagination-next__text']/@href").get()
+        if next_page:
+            next_page = "https://www.labirint.ru/genres/2791/" + next_page
+            yield response.follow(next_page, callback=self.parse)
+
+        # Парсинг персой странички в выбранной категории
         links = ["https://www.labirint.ru" + link for link in response.xpath("//div[contains(@class, 'genres-catalog')]//div[@class='genres-carousel__item']//div[@class='product-cover']/a/@href").getall()]
         for link in links:
             yield response.follow(link, callback=self.book_parse)
@@ -24,12 +28,14 @@ class LabirintruSpider(scrapy.Spider):
         
     def book_parse(self, response:HtmlResponse):
 
-        id = response.xpath("//div[@class='articul']/text()").get()
-        isbn = response.xpath("//div[@class='isbn']/text()").get()
-        genre = response.xpath("//div[@class='genre']/a/text()").getall()
-        title = response.xpath("//h1/text()").get()
-        author = response.xpath("//div[@class='authors']/a/text()").getall()
-        rate = response.xpath("//div[@id='rate']/text()").get()
-        book_url = response.url
+        # Получение данные о каждой книги
+
+        id = response.xpath("//div[@class='articul']/text()").get()             # id книги в каталоге labirint.ru
+        isbn = response.xpath("//div[@class='isbn']/text()").get()              # ISBN книги
+        genre = response.xpath("//div[@class='genre']/a/text()").getall()       # Список категории жаров книги
+        title = response.xpath("//h1/text()").get()                             # Название книги
+        author = response.xpath("//div[@class='authors'][1]/a/text()").getall() # Список авторов
+        rate = response.xpath("//div[@id='rate']/text()").get()                 # Рейтинг кнги на сайте
+        book_url = response.url                                                 # Прямая ссылка на книгу
 
         yield LabirintBooksItem(id=id, isbn=isbn, genre=genre, title=title, author=author, rate=rate, book_url=book_url)
